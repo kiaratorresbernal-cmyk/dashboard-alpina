@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard Financiero — Alpina Productos Alimenticios S.A.S. BIC</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js">
+    const tabMetricMap = {
+      income:'income', cost:'cost', opEx:'opEx', ebitda:'ebitda',
+      netIncome:'netIncome', assets:'assets', liabilities:'liabilities'
+    };
+    document.querySelectorAll('.dashTab').forEach(btn => btn.addEventListener('click', () => {
+      document.querySelectorAll('.dashTab').forEach(b => b.classList.remove('activeTab'));
+      btn.classList.add('activeTab');
+      document.querySelectorAll('.card,.kpi').forEach(x => x.classList.remove('metric-focus'));
+      const v = btn.dataset.view;
+      if(v === 'all') {
+        document.getElementById('metricSelector').value='income';
+        document.getElementById('metricSelector').dispatchEvent(new Event('change'));
+        window.scrollTo({top:0,behavior:'smooth'});
+        return;
+      }
+      const key = tabMetricMap[v];
+      if(metricMap[key]){
+        document.getElementById('metricSelector').value=key;
+        document.getElementById('metricSelector').dispatchEvent(new Event('change'));
+      }
+      const target = document.getElementById('dynamicMetricChart').closest('.card');
+      target.classList.add('metric-focus');
+      target.scrollIntoView({behavior:'smooth',block:'center'});
+    }));
+
+
+    const dynamicConclusion = document.querySelector('#dynamicMetricChart').closest('.card').querySelector('.chart-conclusion');
+    const originalMetricHandler = document.getElementById('metricSelector');
+    originalMetricHandler.addEventListener('change', e => {
+      const key = e.target.value;
+      const vals = metricMap[key].values;
+      const available = vals.map((v,i)=>({v,i})).filter(x=>x.v!==null && x.v!==undefined);
+      if(available.length >= 2){
+        const first = available[0], last = available[available.length-1];
+        const ch = ((last.v/first.v)-1)*100;
+        const direction = ch > 0 ? 'aumenta' : ch < 0 ? 'disminuye' : 'permanece estable';
+        dynamicConclusion.innerHTML = `<strong>Lectura ejecutiva.</strong> ${metricMap[key].label} ${direction} ${Math.abs(ch).toLocaleString('es-CO',{minimumFractionDigits:2,maximumFractionDigits:2})}% entre ${data.years[first.i]} y ${data.years[last.i]}.`;
+      } else {
+        dynamicConclusion.innerHTML = `<strong>Lectura ejecutiva.</strong> No hay suficientes años comparables para establecer una tendencia completa de ${metricMap[key].label}.`;
+      }
+    });
+
+</script>
+  <style>
+    :root {
+      --navy: #0b2746;
+      --blue: #1769aa;
+      --teal: #007b79;
+      --green: #20835d;
+      --amber: #b36b00;
+      --red: #b3261e;
+      --slate: #586b7a;
+      --ink: #18212b;
+      --muted: #637381;
+      --line: #dce4ea;
+      --bg: #f4f7fa;
+      --card: #ffffff;
+      --light-blue: #eaf3fb;
+      --light-red: #fbeceb;
+      --light-green: #eaf7f0;
+      --radius: 14px;
+      --shadow: 0 5px 18px rgba(16, 39, 61, .08);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: var(--ink);
+      background: var(--bg);
+      font-size: 14px;
+    }
+    header {
+      background: linear-gradient(120deg, #08233f, #124d75);
+      color: #fff;
+      padding: 25px clamp(18px, 4vw, 56px) 20px;
+      box-shadow: 0 2px 10px rgba(0,0,0,.16);
+    }
+    .headline { display: flex; justify-content: space-between; align-items: start; gap: 25px; flex-wrap: wrap; }
+    h1 { font-size: clamp(22px, 3vw, 32px); margin: 0 0 6px; letter-spacing: -.5px; }
+    .subtitle { margin: 0; color: #dcecf8; font-size: 14px; }
+    .badges { display: flex; flex-wrap: wrap; gap: 8px; }
+    .badge { font-size: 12px; padding: 7px 10px; border: 1px solid rgba(255,255,255,.35); border-radius: 999px; color: #fff; background: rgba(255,255,255,.10); }
+    .filters { margin-top: 18px; display: flex; gap: 12px; flex-wrap: wrap; align-items: end; }
+    label { font-weight: 700; display: block; margin-bottom: 5px; font-size: 12px; color: #dcecf8; }
+    select { border: 1px solid rgba(255,255,255,.35); border-radius: 8px; padding: 9px 34px 9px 10px; color: #fff; background: rgba(255,255,255,.12); font-weight: 600; outline: none; }
+    select option { color: var(--ink); background: #fff; }
+    main { max-width: 1600px; margin: 0 auto; padding: 24px clamp(16px, 3vw, 42px) 44px; }
+    .section-title { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin: 24px 0 12px; }
+    .section-title h2 { margin: 0; font-size: 17px; color: var(--navy); }
+    .section-title p { margin: 0; color: var(--muted); font-size: 12px; }
+    .kpis { display: grid; grid-template-columns: repeat(5, minmax(190px, 1fr)); gap: 14px; }
+    .kpi { background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow); padding: 17px; min-height: 145px; border-top: 4px solid var(--blue); }
+    .kpi.warning { border-top-color: var(--amber); }
+    .kpi.risk { border-top-color: var(--red); }
+    .kpi-label { color: var(--muted); font-weight: 700; font-size: 12px; min-height: 30px; }
+    .kpi-value { font-weight: 800; font-size: 28px; color: var(--navy); margin: 10px 0 5px; letter-spacing: -.8px; }
+    .kpi-change { font-size: 12px; font-weight: 700; }
+    .positive { color: var(--green); }
+    .negative { color: var(--red); }
+    .caution { color: var(--amber); }
+    .kpi-note { margin-top: 8px; color: var(--muted); font-size: 11px; }
+    .grid { display: grid; grid-template-columns: repeat(12, 1fr); gap: 16px; }
+    .card { background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow); padding: 18px; min-width: 0; }
+    .span-8 { grid-column: span 8; }
+    .span-7 { grid-column: span 7; }
+    .span-6 { grid-column: span 6; }
+    .span-5 { grid-column: span 5; }
+    .span-4 { grid-column: span 4; }
+    .span-12 { grid-column: span 12; }
+    .card h3 { margin: 0; font-size: 15px; color: var(--navy); }
+    .card .desc { margin: 5px 0 14px; color: var(--muted); font-size: 12px; }
+    .chart-wrap { position: relative; height: 305px; }
+    .chart-wrap.short { height: 260px; }
+    .table-wrap { overflow-x: auto; }
+    table { border-collapse: collapse; width: 100%; font-size: 12px; }
+    th { text-align: left; background: #edf3f7; color: #385064; font-weight: 800; padding: 9px 10px; white-space: nowrap; }
+    td { padding: 9px 10px; border-bottom: 1px solid #edf1f4; white-space: nowrap; }
+    td:first-child { font-weight: 700; color: #263b4d; }
+    tr:last-child td { border-bottom: none; }
+    .tag { font-size: 10px; padding: 3px 7px; border-radius: 999px; display: inline-block; font-weight: 700; }
+    .tag-green { background: var(--light-green); color: var(--green); }
+    .tag-amber { background: #fff5df; color: var(--amber); }
+    .tag-red { background: var(--light-red); color: var(--red); }
+    .tag-gray { background: #eef2f4; color: #596872; }
+    .insights { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+    .insight { border-left: 4px solid var(--blue); background: #f8fbfd; padding: 13px 14px; border-radius: 0 10px 10px 0; }
+    .insight.risk { border-left-color: var(--red); background: #fffafa; }
+    .insight h4 { margin: 0 0 6px; color: var(--navy); font-size: 13px; }
+    .insight p { margin: 0; color: #415464; line-height: 1.48; font-size: 12px; }
+    .quality { border: 1px solid #f0d7a4; background: #fffaf0; border-radius: var(--radius); padding: 15px 17px; color: #6e5112; }
+    .quality strong { color: #503a0c; }
+    footer { color: var(--muted); max-width: 1600px; margin: 0 auto; padding: 0 clamp(16px, 3vw, 42px) 30px; font-size: 11px; line-height: 1.5; }
+    @media (max-width: 1200px) { .kpis { grid-template-columns: repeat(3, 1fr); } .span-8,.span-7 { grid-column: span 12; } .span-5,.span-4,.span-6 { grid-column: span 6; } }
+    @media (max-width: 760px) { .kpis { grid-template-columns: 1fr; } .span-4,.span-5,.span-6 { grid-column: span 12; } .insights { grid-template-columns: 1fr; } .chart-wrap { height: 280px; } }
+  
+    .dashTab{border:1px solid rgba(255,255,255,.38);background:rgba(255,255,255,.10);color:#fff;
+      border-radius:8px;padding:8px 11px;font-size:11px;font-weight:800;cursor:pointer;white-space:nowrap}
+    .dashTab.activeTab{background:#fff;color:#0b2746}
+    .metric-focus{outline:3px solid rgba(23,105,170,.22);box-shadow:0 8px 28px rgba(16,39,61,.15)!important}
+
+    .chart-conclusion {
+      margin: 10px 0 0;
+      padding: 9px 11px;
+      border-left: 3px solid var(--blue);
+      border-radius: 0 7px 7px 0;
+      background: var(--light-blue);
+      color: #385064;
+      font-size: 11px;
+      line-height: 1.42;
+      font-weight: 600;
+    }
+    .chart-conclusion strong { color: var(--navy); }
+
+</style>
+</head>
+<body>
+  <header>
+    <div class="headline">
+      <div style="display:flex;gap:10px;align-items:center;margin-left:auto">
+        <div style="background:#fff;border-radius:10px;padding:5px 9px;height:54px;display:flex;align-items:center">
+          <img src="https://2.bp.blogspot.com/-C-XtLUeEZAg/UaVkGyKV5pI/AAAAAAAAAFQ/Qe6vI2pLK0A/s1600/alpina%2Bfoto.png" alt="Alpina" style="max-height:44px;max-width:105px;object-fit:contain">
+        </div>
+        <div style="background:#fff;border-radius:10px;padding:5px 9px;height:54px;display:flex;align-items:center">
+          <img src="https://upload.wikimedia.org/wikipedia/commons/1/10/Ulsa_Logo.png" alt="Universidad de La Salle" style="max-height:44px;max-width:105px;object-fit:contain">
+        </div>
+      </div>
+      <div>
+        <h1>Dashboard Financiero — Alpina Productos Alimenticios S.A.S. BIC</h1>
+        <p class="subtitle">Estados financieros anuales individuales | Período 2023–2025 | Unidad: COP millones</p>
+      </div>
+      <div class="badges">
+        <span class="badge">Último año: 2025</span>
+        <span class="badge">Moneda: COP millones</span>
+        <span class="badge">Fuente: archivo suministrado</span>
+      </div>
+    </div>
+    <div class="filters">
+      <div>
+        <label for="yearSelector">Año de análisis</label>
+        <select id="yearSelector">
+          <option value="2025" selected>2025</option>
+          <option value="2024">2024</option>
+          <option value="2023">2023</option>
+        </select>
+      </div>
+      <div>
+        <label for="metricSelector">Métrica dinámica</label>
+        <select id="metricSelector">
+          <option value="income">Ingresos Operacionales</option>
+          <option value="ebitda">EBITDA</option>
+          <option value="netIncome">Utilidad Neta</option>
+          <option value="assets">Activos Totales</option>
+          <option value="liabilities">Pasivos Totales</option>
+        </select>
+      </div>
+    </div>
+  
+    <div id="pageTabs" style="display:flex;gap:7px;overflow-x:auto;margin-top:14px;padding-bottom:2px">
+      <button class="dashTab activeTab" data-view="all">Análisis General</button>
+      <button class="dashTab" data-view="income">Ingresos</button>
+      <button class="dashTab" data-view="cost">Costo de Ventas</button>
+      <button class="dashTab" data-view="opEx">Gastos Operacionales</button>
+      <button class="dashTab" data-view="ebitda">EBITDA</button>
+      <button class="dashTab" data-view="netIncome">Utilidad Neta</button>
+      <button class="dashTab" data-view="assets">Activos</button>
+      <button class="dashTab" data-view="liabilities">Pasivos</button>
+    </div>
+</header>
+
+  <main>
+    <div class="section-title"><h2>KPIs ejecutivos</h2><p>Comparación contra el año inmediatamente anterior</p></div>
+    <section class="kpis" id="kpis"></section>
+
+    <div class="section-title"><h2>Desempeño financiero</h2><p>Magnitudes en COP millones</p></div>
+    <section class="grid">
+      <article class="card span-8">
+        <h3>Evolución de ingresos, EBITDA y utilidad neta</h3>
+        <p class="desc">El EBITDA de 2023 no está disponible en el archivo y se muestra como dato faltante.</p>
+        <div class="chart-wrap"><canvas id="performanceChart"></canvas></div><p class="chart-conclusion"><strong>Lectura ejecutiva.</strong> En 2025 los ingresos se recuperan y el EBITDA crece a un ritmo superior, mientras la utilidad neta mantiene su trayectoria ascendente.</p>
+      </article>
+      <article class="card span-4">
+        <h3>Utilidad neta y margen neto</h3>
+        <p class="desc">Rentabilidad final del período.</p>
+        <div class="chart-wrap"><canvas id="netIncomeChart"></canvas></div><p class="chart-conclusion"><strong>Lectura ejecutiva.</strong> La utilidad neta crece durante los tres años y el margen neto alcanza su nivel más alto en 2025.</p>
+      </article>
+      <article class="card span-7">
+        <h3>Margen y eficiencia operativa</h3>
+        <p class="desc">Los gastos operacionales no son comparables para 2023.</p>
+        <div class="chart-wrap short"><canvas id="marginChart"></canvas></div><p class="chart-conclusion"><strong>Lectura ejecutiva.</strong> En 2025 mejoran el margen EBITDA y el margen neto, mientras el peso relativo de costos y gastos operacionales disminuye.</p>
+      </article>
+      <article class="card span-5">
+        <h3>Principales cuentas financieras</h3>
+        <p class="desc" id="metricDesc">Comparación anual de la métrica seleccionada.</p>
+        <div class="chart-wrap short"><canvas id="dynamicMetricChart"></canvas></div><p class="chart-conclusion"><strong>Lectura ejecutiva.</strong> Este gráfico permite comparar la evolución anual de la métrica seleccionada e identificar rápidamente aumentos o disminuciones.</p>
+      </article>
+    </section>
+
+    <div class="section-title"><h2>Estructura financiera y solvencia</h2><p>Composición de la financiación y presión de liquidez</p></div>
+    <section class="grid">
+      <article class="card span-4">
+        <h3>Estructura de financiación</h3>
+        <p class="desc">Pasivos y patrimonio como proporción de los activos totales.</p>
+        <div class="chart-wrap short"><canvas id="capitalStructureChart"></canvas></div><p class="chart-conclusion"><strong>Lectura ejecutiva.</strong> Los pasivos continúan representando la mayor parte de la financiación de los activos, evidenciando una estructura altamente apalancada.</p>
+      </article>
+      <article class="card span-4">
+        <h3>Endeudamiento y razón corriente</h3>
+        <p class="desc">Endeudamiento en % y liquidez de corto plazo en veces.</p>
+        <div class="chart-wrap short"><canvas id="leverageChart"></canvas></div><p class="chart-conclusion"><strong>Lectura ejecutiva.</strong> El endeudamiento permanece elevado y la razón corriente se mantiene por debajo de 1, señalando presión de liquidez de corto plazo.</p>
+      </article>
+      <article class="card span-4">
+        <h3>Burbuja: escala, margen y activos</h3>
+        <p class="desc">X: Ingresos | Y: Margen Neto | Tamaño: Activos Totales.</p>
+        <div class="chart-wrap short"><canvas id="bubbleChart"></canvas></div><p class="chart-conclusion"><strong>Lectura ejecutiva.</strong> 2025 combina mayores ingresos y margen neto, aunque mantiene un nivel de endeudamiento elevado.</p>
+      </article>
+    </section>
+
+    <div class="section-title"><h2>Tabla maestra de control</h2><p>Las cifras de costos y gastos se muestran en magnitud positiva para lectura gerencial</p></div>
+    <section class="card span-12 table-wrap">
+      <table>
+        <thead>
+          <tr><th>Cuenta</th><th>2023</th><th>2024</th><th>2025</th><th>Variación 2025 vs. 2024</th><th>Tendencia</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Ingresos Operacionales</td><td>2.180.243,23</td><td>2.106.374,32</td><td>2.295.087,85</td><td class="positive">+188.713,53 / +8,96%</td><td><span class="tag tag-green">↑ Recuperación</span></td></tr>
+          <tr><td>Costo de Ventas</td><td>1.307.458,35</td><td>1.219.179,95</td><td>1.309.480,28</td><td class="caution">+90.300,33 / +7,41%</td><td><span class="tag tag-amber">→ Mixta</span></td></tr>
+          <tr><td>Gastos Operacionales</td><td>No comparable</td><td>653.340,09</td><td>697.609,95</td><td class="caution">+44.269,86 / +6,78%</td><td><span class="tag tag-green">↑ Mejora relativa</span></td></tr>
+          <tr><td>EBITDA</td><td>No disponible</td><td>293.552,23</td><td>344.554,38</td><td class="positive">+51.002,15 / +17,37%</td><td><span class="tag tag-green">↑ Crecimiento</span></td></tr>
+          <tr><td>Utilidad Neta</td><td>93.628,20</td><td>100.521,17</td><td>114.367,38</td><td class="positive">+13.846,21 / +13,77%</td><td><span class="tag tag-green">↑ Crecimiento</span></td></tr>
+          <tr><td>Activos Totales</td><td>1.536.664,37</td><td>1.431.184,17</td><td>1.344.661,18</td><td class="negative">-86.522,99 / -6,05%</td><td><span class="tag tag-amber">↓ Disminución</span></td></tr>
+          <tr><td>Pasivos Totales</td><td>1.298.110,67</td><td>1.255.424,78</td><td>1.180.945,41</td><td class="positive">-74.479,37 / -5,93%</td><td><span class="tag tag-green">↓ Disminución</span></td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <div class="section-title"><h2>Insights ejecutivos</h2><p>Derivados exclusivamente de los estados financieros suministrados</p></div>
+    <section class="insights">
+      <article class="insight"><h4>Recuperación de ingresos</h4><p>Los ingresos aumentaron 8,96% en 2025 hasta COP 2.295.087,85 millones, después de caer 3,39% en 2024. El nivel de 2025 supera el de 2023 en 5,27%.</p></article>
+      <article class="insight"><h4>Mejora de eficiencia bruta</h4><p>Costo de Ventas/Ingresos disminuyó de 57,88% a 57,06% en 2025; como resultado, el margen bruto avanzó 0,82 puntos porcentuales.</p></article>
+      <article class="insight"><h4>Expansión operativa</h4><p>El EBITDA aumentó 17,37% en 2025, más que el crecimiento de ingresos de 8,96%; el margen EBITDA mejoró de 13,94% a 15,01%.</p></article>
+      <article class="insight"><h4>Utilidad neta en crecimiento</h4><p>La utilidad neta aumentó por segundo año consecutivo hasta COP 114.367,38 millones; el margen neto alcanzó 4,98%.</p></article>
+      <article class="insight risk"><h4>Apalancamiento relativo elevado</h4><p>Aunque los pasivos totales bajaron en valor absoluto, el endeudamiento aumentó ligeramente de 87,72% a 87,82% debido a la reducción de activos y patrimonio.</p></article>
+      <article class="insight risk"><h4>Liquidez de corto plazo</h4><p>La razón corriente se redujo a 0,84x en 2025. Los activos corrientes de COP 519.870,97 millones no cubren los pasivos corrientes de COP 621.829,07 millones.</p></article>
+    </section>
+
+    <div class="section-title"><h2>Notas de calidad de datos</h2></div>
+    <section class="quality">
+      <strong>Limitaciones relevantes:</strong> Para comparabilidad, Gastos Operacionales se define como Gastos de venta y distribución + Gastos administrativos; Otros resultados operativos netos se mantiene separado.  EBITDA no está disponible para 2023. Gastos Operacionales no son comparables en 2023 porque las líneas de gastos de venta y administrativos aparecen como cero y otros resultados operativos están vacíos. La clasificación de activos no corrientes en 2023 presenta una inconsistencia frente a activos totales, por lo que no se utiliza para análisis de composición. No se sustituyen faltantes por cero.
+    </section>
+  </main>
+  <footer>
+    Fuente: Reporte financiero suministrado de Alpina Productos Alimenticios S.A.S. - BIC. Las cifras se presentan en millones de pesos colombianos (COP millones). Este archivo es una visualización analítica estática con selectores locales; no reemplaza un modelo publicado de Power BI.
+  </footer>
+
+  <script>
+    const data = {
+      years: ['2023', '2024', '2025'],
+      income: [2180243.23, 2106374.32, 2295087.85],
+      cost: [1307458.35, 1219179.95, 1309480.28],
+      opEx: [null, 653340.09, 697609.95],
+      ebitda: [null, 293552.23, 344554.38],
+      netIncome: [93628.20, 100521.17, 114367.38],
+      assets: [1536664.37, 1431184.17, 1344661.18],
+      liabilities: [1298110.67, 1255424.78, 1180945.41],
+      equity: [238553.70, 175759.39, 163715.78],
+      currentAssets: [438638.31, 431779.74, 519870.97],
+      currentLiabilities: [486674.01, 508250.07, 621829.07],
+      marginEBITDA: [null, 13.9364, 15.0127],
+      marginNet: [4.2944, 4.7722, 4.9831],
+      costToIncome: [59.9685, 57.8805, 57.0558],
+      opExToIncome: [null, 31.0173, 30.3958],
+      leverage: [84.4759, 87.7193, 87.8248],
+      currentRatio: [0.9013, 0.8495, 0.8360]
+    };
+
+    Chart.defaults.font.family = 'Inter, system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif';
+    Chart.defaults.color = '#52616d';
+    const fmt = new Intl.NumberFormat('es-CO', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+    const money = v => v === null || v === undefined ? 'No disponible' : fmt.format(v);
+    const pct = v => v === null || v === undefined ? 'No disponible' : v.toLocaleString('es-CO', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + '%';
+    const commonPlugins = { legend: { position: 'bottom', labels: { boxWidth: 12, usePointStyle: true, padding: 14 } }, tooltip: { callbacks: { label: ctx => { const y = ctx.parsed.y; return `${ctx.dataset.label}: ${y === null ? 'No disponible' : fmt.format(y)}`; } } } };
+
+    const performanceChart = new Chart(document.getElementById('performanceChart'), {
+      type: 'line', data: { labels: data.years, datasets: [
+        { label: 'Ingresos Operacionales', data: data.income, borderColor: '#1769aa', backgroundColor: '#1769aa', tension: .28, borderWidth: 3, pointRadius: 4 },
+        { label: 'EBITDA', data: data.ebitda, borderColor: '#20835d', backgroundColor: '#20835d', tension: .28, borderWidth: 3, pointRadius: 4, spanGaps: false },
+        { label: 'Utilidad Neta', data: data.netIncome, borderColor: '#b36b00', backgroundColor: '#b36b00', tension: .28, borderWidth: 3, pointRadius: 4 }
+      ]}, options: { responsive: true, maintainAspectRatio: false, plugins: commonPlugins, scales: { y: { title: { display: true, text: 'COP millones' }, ticks: { callback: v => fmt.format(v) } }, x: { grid: { display: false } } } }
+    });
+
+    const netIncomeChart = new Chart(document.getElementById('netIncomeChart'), {
+      type: 'bar', data: { labels: data.years, datasets: [
+        { label: 'Utilidad Neta (COP millones)', data: data.netIncome, backgroundColor: ['#a9c8e4', '#5a9dca', '#1769aa'], borderRadius: 6, yAxisID: 'y' },
+        { label: 'Margen Neto (%)', data: data.marginNet, type: 'line', borderColor: '#20835d', backgroundColor: '#20835d', tension: .25, borderWidth: 3, pointRadius: 4, yAxisID: 'y1' }
+      ]}, options: { responsive: true, maintainAspectRatio: false, plugins: commonPlugins, scales: { y: { title: { display: true, text: 'COP millones' }, ticks: { callback: v => fmt.format(v) } }, y1: { position: 'right', title: { display: true, text: '%' }, grid: { drawOnChartArea: false }, ticks: { callback: v => v + '%' } }, x: { grid: { display: false } } } }
+    });
+
+    const marginChart = new Chart(document.getElementById('marginChart'), {
+      type: 'line', data: { labels: data.years, datasets: [
+        { label: 'Margen EBITDA', data: data.marginEBITDA, borderColor: '#20835d', backgroundColor: '#20835d', tension: .25, borderWidth: 3, pointRadius: 4 },
+        { label: 'Margen Neto', data: data.marginNet, borderColor: '#1769aa', backgroundColor: '#1769aa', tension: .25, borderWidth: 3, pointRadius: 4 },
+        { label: 'Costo / Ingresos', data: data.costToIncome, borderColor: '#b36b00', backgroundColor: '#b36b00', tension: .25, borderWidth: 3, pointRadius: 4 },
+        { label: 'Gastos Operacionales / Ingresos', data: data.opExToIncome, borderColor: '#7c4d99', backgroundColor: '#7c4d99', tension: .25, borderWidth: 3, pointRadius: 4 }
+      ]}, options: { responsive: true, maintainAspectRatio: false, plugins: { ...commonPlugins, tooltip: { callbacks: { label: ctx => `${ctx.dataset.label}: ${ctx.parsed.y === null ? 'No disponible' : pct(ctx.parsed.y)}` } } }, scales: { y: { title: { display: true, text: '%' }, ticks: { callback: v => v + '%' } }, x: { grid: { display: false } } } }
+    });
+
+    const metricMap = { income: {label: 'Ingresos Operacionales', values: data.income, color: '#1769aa'}, ebitda: {label: 'EBITDA', values: data.ebitda, color: '#20835d'}, netIncome: {label: 'Utilidad Neta', values: data.netIncome, color: '#b36b00'}, assets: {label: 'Activos Totales', values: data.assets, color: '#556b7c'}, liabilities: {label: 'Pasivos Totales', values: data.liabilities, color: '#b3261e'} };
+    const dynamicMetricChart = new Chart(document.getElementById('dynamicMetricChart'), {
+      type: 'bar', data: { labels: data.years, datasets: [{ label: 'Ingresos Operacionales', data: data.income, backgroundColor: '#1769aa', borderRadius: 6 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: commonPlugins, scales: { y: { title: { display: true, text: 'COP millones' }, ticks: { callback: v => fmt.format(v) } }, x: { grid: { display: false } } } }
+    });
+
+    const capitalStructureChart = new Chart(document.getElementById('capitalStructureChart'), {
+      type: 'bar', data: { labels: data.years, datasets: [
+        { label: 'Pasivos Totales', data: data.liabilities.map((x,i) => x/data.assets[i]*100), backgroundColor: '#b36b00', borderRadius: 5 },
+        { label: 'Patrimonio', data: data.equity.map((x,i) => x/data.assets[i]*100), backgroundColor: '#1769aa', borderRadius: 5 }
+      ]}, options: { responsive: true, maintainAspectRatio: false, plugins: { ...commonPlugins, tooltip: { callbacks: { label: ctx => `${ctx.dataset.label}: ${pct(ctx.parsed.y)}` } } }, scales: { x: { stacked: true, grid: { display: false } }, y: { stacked: true, max: 100, title: { display: true, text: '% de Activos Totales' }, ticks: { callback: v => v + '%' } } } }
+    });
+
+    const leverageChart = new Chart(document.getElementById('leverageChart'), {
+      type: 'bar', data: { labels: data.years, datasets: [
+        { label: 'Endeudamiento (%)', data: data.leverage, backgroundColor: '#b36b00', borderRadius: 6, yAxisID: 'y' },
+        { label: 'Razón Corriente (x)', data: data.currentRatio, type: 'line', borderColor: '#b3261e', backgroundColor: '#b3261e', borderWidth: 3, tension: .25, pointRadius: 4, yAxisID: 'y1' }
+      ]}, options: { responsive: true, maintainAspectRatio: false, plugins: commonPlugins, scales: { y: { min: 0, max: 100, title: { display: true, text: 'Endeudamiento (%)' }, ticks: { callback: v => v + '%' } }, y1: { min: 0, max: 1.2, position: 'right', title: { display: true, text: 'Razón corriente (x)' }, grid: { drawOnChartArea: false }, ticks: { callback: v => v.toFixed(1) + 'x' } }, x: { grid: { display: false } } } }
+    });
+
+    const bubbleChart = new Chart(document.getElementById('bubbleChart'), {
+      type: 'bubble', data: { datasets: [{ label: 'Año', data: data.years.map((year, i) => ({ x: data.income[i], y: data.marginNet[i], r: 7 + (data.assets[i]/160000) })), backgroundColor: ['rgba(91,157,202,.65)','rgba(23,105,170,.70)','rgba(32,131,93,.75)'], borderColor: ['#5a9dca','#1769aa','#20835d'], borderWidth: 2 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => { const i = ctx.dataIndex; return [`Año: ${data.years[i]}`, `Ingresos: ${fmt.format(data.income[i])}`, `Margen Neto: ${pct(data.marginNet[i])}`, `Activos: ${fmt.format(data.assets[i])}`, `Endeudamiento: ${pct(data.leverage[i])}`]; } } } }, scales: { x: { title: { display: true, text: 'Ingresos Operacionales (COP millones)' }, ticks: { callback: v => fmt.format(v) } }, y: { title: { display: true, text: 'Margen Neto (%)' }, ticks: { callback: v => v + '%' } } } }
+    });
+
+    function kpiCard(label, value, change, changeClass, note, extra='') { return `<article class="kpi ${extra}"><div class="kpi-label">${label}</div><div class="kpi-value">${value}</div><div class="kpi-change ${changeClass}">${change}</div><div class="kpi-note">${note}</div></article>`; }
+    function renderKpis(year) {
+      const i = data.years.indexOf(String(year));
+      const prev = i - 1;
+      const growth = prev >= 0 ? ((data.income[i]/data.income[prev])-1)*100 : null;
+      const ebitdaMChange = prev >= 0 && data.marginEBITDA[i] !== null && data.marginEBITDA[prev] !== null ? data.marginEBITDA[i]-data.marginEBITDA[prev] : null;
+      const netMChange = prev >= 0 ? data.marginNet[i]-data.marginNet[prev] : null;
+      const levChange = prev >= 0 ? data.leverage[i]-data.leverage[prev] : null;
+      const crChange = prev >= 0 ? data.currentRatio[i]-data.currentRatio[prev] : null;
+      document.getElementById('kpis').innerHTML = [
+        kpiCard('Crecimiento de Ingresos', growth === null ? '—' : pct(growth), growth === null ? 'Sin año anterior en el período' : (growth >= 0 ? '↑ ' : '↓ ') + pct(growth) + ' vs. año anterior', growth >= 0 ? 'positive' : 'negative', `Ingresos: COP ${money(data.income[i])} millones`),
+        kpiCard('Margen EBITDA', data.marginEBITDA[i] === null ? 'No disponible' : pct(data.marginEBITDA[i]), ebitdaMChange === null ? 'Sin base comparable' : (ebitdaMChange >= 0 ? '↑ +' : '↓ ') + pct(Math.abs(ebitdaMChange)) + ' p.p.', ebitdaMChange !== null && ebitdaMChange >= 0 ? 'positive' : 'caution', data.ebitda[i] === null ? 'EBITDA no informado' : `EBITDA: COP ${money(data.ebitda[i])} millones`),
+        kpiCard('Margen Neto', pct(data.marginNet[i]), netMChange === null ? 'Sin año anterior en el período' : (netMChange >= 0 ? '↑ +' : '↓ ') + pct(Math.abs(netMChange)) + ' p.p.', netMChange !== null && netMChange >= 0 ? 'positive' : 'negative', `Utilidad Neta: COP ${money(data.netIncome[i])} millones`),
+        kpiCard('Endeudamiento', pct(data.leverage[i]), levChange === null ? 'Sin año anterior en el período' : (levChange > 0 ? '↑ +' : '↓ ') + pct(Math.abs(levChange)) + ' p.p.', levChange !== null && levChange > 0 ? 'negative' : 'positive', `Pasivos / Activos Totales`, 'risk'),
+        kpiCard('Razón Corriente', data.currentRatio[i].toFixed(2) + 'x', crChange === null ? 'Sin año anterior en el período' : (crChange < 0 ? '↓ ' : '↑ ') + Math.abs(crChange).toFixed(2) + 'x', data.currentRatio[i] < 1 ? 'negative' : 'positive', `Activos Corrientes / Pasivos Corrientes`, 'warning')
+      ].join('');
+    }
+    document.getElementById('yearSelector').addEventListener('change', e => renderKpis(e.target.value));
+    document.getElementById('metricSelector').addEventListener('change', e => {
+      const m = metricMap[e.target.value];
+      dynamicMetricChart.data.datasets[0].label = m.label;
+      dynamicMetricChart.data.datasets[0].data = m.values;
+      dynamicMetricChart.data.datasets[0].backgroundColor = m.color;
+      dynamicMetricChart.update();
+      document.getElementById('metricDesc').textContent = `Evolución anual de ${m.label} en COP millones.`;
+    });
+    renderKpis('2025');
+  
+    const tabMetricMap = {
+      income:'income', cost:'cost', opEx:'opEx', ebitda:'ebitda',
+      netIncome:'netIncome', assets:'assets', liabilities:'liabilities'
+    };
+    document.querySelectorAll('.dashTab').forEach(btn => btn.addEventListener('click', () => {
+      document.querySelectorAll('.dashTab').forEach(b => b.classList.remove('activeTab'));
+      btn.classList.add('activeTab');
+      document.querySelectorAll('.card,.kpi').forEach(x => x.classList.remove('metric-focus'));
+      const v = btn.dataset.view;
+      if(v === 'all') {
+        document.getElementById('metricSelector').value='income';
+        document.getElementById('metricSelector').dispatchEvent(new Event('change'));
+        window.scrollTo({top:0,behavior:'smooth'});
+        return;
+      }
+      const key = tabMetricMap[v];
+      if(metricMap[key]){
+        document.getElementById('metricSelector').value=key;
+        document.getElementById('metricSelector').dispatchEvent(new Event('change'));
+      }
+      const target = document.getElementById('dynamicMetricChart').closest('.card');
+      target.classList.add('metric-focus');
+      target.scrollIntoView({behavior:'smooth',block:'center'});
+    }));
+
+
+    const dynamicConclusion = document.querySelector('#dynamicMetricChart').closest('.card').querySelector('.chart-conclusion');
+    const originalMetricHandler = document.getElementById('metricSelector');
+    originalMetricHandler.addEventListener('change', e => {
+      const key = e.target.value;
+      const vals = metricMap[key].values;
+      const available = vals.map((v,i)=>({v,i})).filter(x=>x.v!==null && x.v!==undefined);
+      if(available.length >= 2){
+        const first = available[0], last = available[available.length-1];
+        const ch = ((last.v/first.v)-1)*100;
+        const direction = ch > 0 ? 'aumenta' : ch < 0 ? 'disminuye' : 'permanece estable';
+        dynamicConclusion.innerHTML = `<strong>Lectura ejecutiva.</strong> ${metricMap[key].label} ${direction} ${Math.abs(ch).toLocaleString('es-CO',{minimumFractionDigits:2,maximumFractionDigits:2})}% entre ${data.years[first.i]} y ${data.years[last.i]}.`;
+      } else {
+        dynamicConclusion.innerHTML = `<strong>Lectura ejecutiva.</strong> No hay suficientes años comparables para establecer una tendencia completa de ${metricMap[key].label}.`;
+      }
+    });
+
+</script>
+</body>
+</html>
